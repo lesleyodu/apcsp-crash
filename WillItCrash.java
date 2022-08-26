@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Font;
 
+import lib.StdDraw;
+
 public class WillItCrash {
 
     public static final double WIDTH = 1.0;
@@ -127,7 +129,8 @@ public class WillItCrash {
                 StdDraw.setPenColor(StdDraw.BLACK);
                 StdDraw.rectangle(x, y, WIDTH / 2, WIDTH / 2);
                 if (isCursor(grid[i][j])) {
-                    StdDraw.text(x, y, "" + grid[i][j]);
+                    // Draw a triangle in the center of the tile
+                    drawCursor(grid[i][j], x, y);
                 }
             }
         }
@@ -167,5 +170,40 @@ public class WillItCrash {
             }
         }
         return -1;
+    }
+
+    /**
+    * Displays a triangle based on the character passed in the first arg at the location set by the second and third args. 
+    *
+    * @param  c a character representing the cursor, one of '^', '<', '<', 'v'
+    * @param  x the 'x' coordinate where the cursor should appear on the screen
+    * @param  y the 'y' coordinate where the cursor should appear on the screen
+    */
+    public static void drawCursor(char c, double x, double y) {
+        // validate (I know this should be an interface or whatever but I am lazy and nothing is encapsulated yet)
+        if (!(c == 'v' || c == '^' | c == '>' || c == '<')) {
+            throw new Error("First arg must be one of the following characters: 'v', '^', '>', or '<'");
+        }
+        
+        final double triangleScale = 0.3; // Set size of triangle relative to WIDTH
+
+        // default vertices coords for upward-facing triangle, assuming c = '^'
+        double[] verticesX = {x, x+WIDTH*triangleScale, x-WIDTH*triangleScale};
+        double[] verticesY = {y+WIDTH*triangleScale, y-WIDTH*triangleScale, y-WIDTH*triangleScale};
+
+        // adjust vertex coords based on true value of 'c'
+        if (c == '>') {
+            verticesX[0] = x-WIDTH*triangleScale;
+            verticesY[1] = y;
+        } else if(c == '<') {
+            verticesX[0] = x+WIDTH*triangleScale;
+            verticesY[2] = y;
+        } else if(c == 'v') {
+            verticesY[0] = y-WIDTH*triangleScale;
+            verticesY[1] = y+WIDTH*triangleScale;
+            verticesY[2] = y+WIDTH*triangleScale;
+        }
+        // display the cursor
+        StdDraw.filledPolygon(verticesX, verticesY);
     }
 }
