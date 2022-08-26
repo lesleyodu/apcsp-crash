@@ -6,6 +6,19 @@ import lib.StdDraw;
 public class WillItCrash {
 
     public static final double WIDTH = 1.0;
+    
+    public static final int MOVE_FORWARD = (int) 'f';
+    public static final int MOVE_BACKWARD = (int) 'b';
+    public static final int MOVE_LEFT = (int) 'l';
+    public static final int MOVE_RIGHT = (int) 'r';
+    
+    public static final char EMPTY_CELL = '_';
+    public static final char BLOCKED_CELL = 'x';
+    
+    public static final char CURSOR_LEFT = '<';
+    public static final char CURSOR_RIGHT = '>';
+    public static final char CURSOR_UP = '^';
+    public static final char CURSOR_DOWN = 'v';
 
     public static void main(String[] args) {
         
@@ -40,61 +53,27 @@ public class WillItCrash {
                 grid[cursor_i][cursor_j] = rotateRight(grid[cursor_i][cursor_j]);
             }
             else if (commands[i].equals("MOVE_FORWARD")) {
-                if (grid[cursor_i][cursor_j] == '>') {
-                    if (cursor_j < grid[cursor_i].length - 1) {
-                        if (grid[cursor_i][cursor_j + 1] == '_') {
-                            grid[cursor_i][cursor_j] = '_';
-                            grid[cursor_i][cursor_j + 1] = '>';
-                        }
-                        else {
-                            crash = true;
-                        }
+                if (canMove(grid, MOVE_FORWARD)) {
+                    if (grid[cursor_i][cursor_j] == CURSOR_RIGHT) {
+                        grid[cursor_i][cursor_j] = EMPTY_CELL;
+                        grid[cursor_i][cursor_j + 1] = CURSOR_RIGHT;
+                    }
+                    else if (grid[cursor_i][cursor_j] == CURSOR_LEFT) {
+                        grid[cursor_i][cursor_j] = EMPTY_CELL;
+                        grid[cursor_i][cursor_j - 1] = CURSOR_LEFT;
+                    }
+                    else if (grid[cursor_i][cursor_j] == CURSOR_DOWN) {
+                        grid[cursor_i][cursor_j] = EMPTY_CELL;
+                        grid[cursor_i + 1][cursor_j] = CURSOR_DOWN;
                     }
                     else {
-                        crash = true;
+                        grid[cursor_i][cursor_j] = EMPTY_CELL;
+                        grid[cursor_i - 1][cursor_j] = CURSOR_UP;
                     }
-                }
-                else if (grid[cursor_i][cursor_j] == '<') {
-                    if (cursor_j > 0) {
-                        if (grid[cursor_i][cursor_j - 1] == '_') {
-                            grid[cursor_i][cursor_j] = '_';
-                            grid[cursor_i][cursor_j - 1] = '<';
-                        }
-                        else {
-                            crash = true;
-                        }
-                    }
-                    else {
-                        crash = true;
-                    }
-                }
-                else if (grid[cursor_i][cursor_j] == 'v') {
-                    if (cursor_i < grid.length - 1) {
-                        if (grid[cursor_i + 1][cursor_j] == '_') {
-                            grid[cursor_i][cursor_j] = '_';
-                            grid[cursor_i + 1][cursor_j] = 'v';
-                        }
-                        else {
-                            crash = true;
-                        }
-                    }
-                    else {
-                        crash = true;
-                    }
+                    
                 }
                 else {
-                    if (cursor_i > 0) {
-                        if (grid[cursor_i - 1][cursor_j] == '_') {
-                            grid[cursor_i][cursor_j] = '_';
-                            grid[cursor_i - 1][cursor_j] = '^';
-                        }
-                        else {
-                            crash = true;
-                        }
-                    }
-                    else {
-                        crash = true;
-                    }
+                    crash = true;
                 }
 
             }
@@ -129,8 +108,8 @@ public class WillItCrash {
                 StdDraw.setPenColor(StdDraw.BLACK);
                 StdDraw.rectangle(x, y, WIDTH / 2, WIDTH / 2);
                 if (isCursor(grid[i][j])) {
-                    // Draw a triangle in the center of the tile
                     drawCursor(grid[i][j], x, y);
+                    //StdDraw.text(x, y, "" + grid[i][j]);
                 }
             }
         }
@@ -171,8 +150,8 @@ public class WillItCrash {
         }
         return -1;
     }
-
-    /**
+    
+     /**
     * Displays a triangle based on the character passed in the first arg at the location set by the second and third args. 
     *
     * @param  c a character representing the cursor, one of '^', '<', '<', 'v'
@@ -205,5 +184,32 @@ public class WillItCrash {
         }
         // display the cursor
         StdDraw.filledPolygon(verticesX, verticesY);
+    }
+    
+    public static boolean canMove(char[][] grid, int direction) {
+        int curs = getCursorLocation(grid); 
+        int cursor_i = curs / 10;
+        int cursor_j = curs % 10;
+        if (grid[cursor_i][cursor_j] == CURSOR_RIGHT && direction == MOVE_FORWARD ||
+            grid[cursor_i][cursor_j] == CURSOR_LEFT && direction == MOVE_BACKWARD ||
+            grid[cursor_i][cursor_j] == CURSOR_UP && direction == MOVE_RIGHT ||
+            grid[cursor_i][cursor_j] == CURSOR_DOWN && direction == MOVE_LEFT) {
+            return cursor_j < grid[cursor_i].length - 1 && grid[cursor_i][cursor_j + 1] == EMPTY_CELL;
+        }
+        else if (grid[cursor_i][cursor_j] == CURSOR_LEFT && direction == MOVE_FORWARD ||
+                 grid[cursor_i][cursor_j] == CURSOR_RIGHT && direction == MOVE_BACKWARD ||
+                 grid[cursor_i][cursor_j] == CURSOR_UP && direction == MOVE_LEFT ||
+                 grid[cursor_i][cursor_j] == CURSOR_DOWN && direction == MOVE_RIGHT) {
+           return cursor_j > 0 && grid[cursor_i][cursor_j - 1] == EMPTY_CELL;
+        }
+        else if (grid[cursor_i][cursor_j] == CURSOR_DOWN && direction == MOVE_FORWARD ||
+                 grid[cursor_i][cursor_j] == CURSOR_UP && direction == MOVE_BACKWARD ||
+                 grid[cursor_i][cursor_j] == CURSOR_LEFT && direction == MOVE_LEFT ||
+                 grid[cursor_i][cursor_j] == CURSOR_RIGHT && direction == MOVE_RIGHT) {
+             return cursor_i < grid.length - 1 && grid[cursor_i + 1][cursor_j] == EMPTY_CELL;
+        }
+        else {
+            return cursor_i > 0 && grid[cursor_i - 1][cursor_j] == EMPTY_CELL;
+        }
     }
 }
