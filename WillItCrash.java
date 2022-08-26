@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Font;
 
+import lib.StdDraw;
+
 public class WillItCrash {
 
     public static final double WIDTH = 1.0;
