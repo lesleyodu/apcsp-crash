@@ -1,5 +1,8 @@
 import java.awt.Color;
 import java.awt.Font;
+import java.util.Scanner;
+import java.io.File;
+import java.util.ArrayList;
 
 import lib.StdDraw;
 
@@ -20,22 +23,36 @@ public class WillItCrash {
     public static final char CURSOR_UP = '^';
     public static final char CURSOR_DOWN = 'v';
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+    
+        String inputName = (args.length > 0) ? args[0] : "u1";
+        int endCell = -1;
+    
+        Scanner gridFile = new Scanner(new File("input-files/grid-"+ inputName + ".txt"));
+        ArrayList<String> gridParse = new ArrayList<String>();
+        while (gridFile.hasNextLine()) {
+            gridParse.add(gridFile.nextLine());
+        }
+        char[][] grid = new char[gridParse.size()][gridParse.get(0).length()];
+        for (int i = 0; i < gridParse.size(); i++) {
+            grid[i] = gridParse.get(i).trim().toCharArray();
+            if (gridParse.get(i).contains("*")) {
+                int j = gridParse.get(i).indexOf("*");
+                endCell = i * 10 + j;
+                grid[i][j] = '_';
+            }
+        }
         
-        char[][] grid = {{'x', '_', '_', '_', 'x'},
-                         {'_', 'x', '_', '_', '_'},
-                         {'_', '_', '>', '_', '_'},
-                         {'_', '_', 'x', '_', '_'},
-                         {'_', 'x', '_', 'x', '_'}};
-        String[] commands = {"MOVE_FORWARD", "ROTATE_LEFT", "MOVE_FORWARD", "ROTATE_LEFT",
-                             "MOVE_FORWARD", "ROTATE_LEFT", "MOVE_FORWARD", "ROTATE_LEFT",
-                             "MOVE_FORWARD", "ROTATE_LEFT", "MOVE_FORWARD",
-                             "ROTATE_RIGHT", "MOVE_FORWARD", "ROTATE_RIGHT", "MOVE_FORWARD", 
-                             "ROTATE_RIGHT", "MOVE_FORWARD", "ROTATE_RIGHT", "MOVE_FORWARD"};
-        initializeGrid(grid);
+        Scanner commandFile = new Scanner(new File("input-files/commands-"+ inputName + ".txt"));
+        ArrayList<String> commands = new ArrayList<String>();
+        while (commandFile.hasNextLine()) {
+            commands.add(commandFile.nextLine());
+        }
+        
+        initializeGrid(grid, endCell);
         boolean crash = false;
-        for (int i = 0; i < commands.length; i++) {
-            crash = false;
+        boolean succeed = false;
+        for (int i = 0; i < commands.size(); i++) {
             int curs = getCursorLocation(grid); 
             int cursor_i = curs / 10;
             int cursor_j = curs % 10;
@@ -44,15 +61,19 @@ public class WillItCrash {
             double y = (grid.length + 0.5)* WIDTH;
             StdDraw.filledRectangle(x, y, (grid.length * WIDTH)/2.0, WIDTH * 0.5);
             StdDraw.setPenColor(StdDraw.BLACK);
-            StdDraw.text(x, y, commands[i]);
+            String commandText = commands.get(i);
+            if (commandText.endsWith("()")){
+                commandText = commandText.substring(0, commandText.length() - 2);
+            }
+            StdDraw.text(x, y, commandText);
             StdDraw.show(1000);
-            if (commands[i].equals("ROTATE_LEFT")) {
+            if (commands.get(i).startsWith("ROTATE_LEFT")) {
                 grid[cursor_i][cursor_j] = rotateLeft(grid[cursor_i][cursor_j]);
             }
-            else if (commands[i].equals("ROTATE_RIGHT")) {
+            else if (commands.get(i).startsWith("ROTATE_RIGHT")) {
                 grid[cursor_i][cursor_j] = rotateRight(grid[cursor_i][cursor_j]);
             }
-            else if (commands[i].equals("MOVE_FORWARD")) {
+            else if (commands.get(i).startsWith("MOVE_FORWARD")) {
                 if (canMove(grid, MOVE_FORWARD)) {
                     if (grid[cursor_i][cursor_j] == CURSOR_RIGHT) {
                         grid[cursor_i][cursor_j] = EMPTY_CELL;
@@ -70,14 +91,17 @@ public class WillItCrash {
                         grid[cursor_i][cursor_j] = EMPTY_CELL;
                         grid[cursor_i - 1][cursor_j] = CURSOR_UP;
                     }
-                    
+                   
+                   if(getCursorLocation(grid) == endCell) {
+                       succeed = true;
+                   } 
                 }
                 else {
                     crash = true;
                 }
 
             }
-            drawGrid(grid);
+            drawGrid(grid, endCell);
             StdDraw.setPenColor(StdDraw.WHITE);
             StdDraw.filledRectangle(x, y, (grid.length * WIDTH)/2.0, WIDTH * 0.5);
             if (crash) {
@@ -86,22 +110,33 @@ public class WillItCrash {
                 StdDraw.show(1000);
                 break;
             }
+            if (succeed) {
+                StdDraw.setPenColor(StdDraw.BOOK_BLUE );
+                StdDraw.text(x, y, "GOAL!!!");
+                StdDraw.show(1000);
+                break;
+            }
             StdDraw.show(1000);
         }
         
     }
-    public static void initializeGrid(char[][] grid) {
+    public static void initializeGrid(char[][] grid, int endCell) {
         StdDraw.setXscale(0, grid.length * WIDTH);
         StdDraw.setYscale(0, (grid.length + 1) * WIDTH);
         Font font = new Font("Arial", Font.BOLD, 60);
         StdDraw.setFont(font);
-        drawGrid(grid);
+        drawGrid(grid, endCell);
         StdDraw.show(2000);
     }
-    public static void drawGrid(char[][] grid) {
+    public static void drawGrid(char[][] grid, int endCell) {
         for (int i = 0; i < grid.length; i++) {
             for (int j = 0; j < grid[i].length; j++) {
-                StdDraw.setPenColor(getGridColor(grid[i][j]));
+                if (endCell != -1 && endCell / 10 == i && endCell % 10 == j) {
+                    StdDraw.setPenColor(StdDraw.BOOK_BLUE);
+                }
+                else {
+                    StdDraw.setPenColor(getGridColor(grid[i][j]));
+                }
                 double x = j + WIDTH / 2;
                 double y = grid.length - i - WIDTH / 2;
                 StdDraw.filledRectangle(x, y, WIDTH / 2, WIDTH / 2);
@@ -116,14 +151,14 @@ public class WillItCrash {
 
     }
     public static Color getGridColor(char c) {
-        if (c == 'x') return StdDraw.GRAY;
+        if (c == BLOCKED_CELL) return StdDraw.GRAY;
         else          return StdDraw.WHITE; //cursor
     }
     public static boolean isCursor(char c) {
-        return c == '>' || c == '<' || c == '^' || c == 'v';
+        return c == CURSOR_RIGHT || c == CURSOR_LEFT || c == CURSOR_UP || c == CURSOR_DOWN;
     }
     public static char rotateLeft(char c) {
-        char[] rot = {'>', '^', '<', 'v'};
+        char[] rot = {CURSOR_RIGHT, CURSOR_UP, CURSOR_LEFT, CURSOR_DOWN};
         for (int i = 0; i < rot.length; i++) {
             if (c == rot[i]) {
                 return rot[(i + 1) % rot.length];
@@ -132,7 +167,7 @@ public class WillItCrash {
         return c;
     }
     public static char rotateRight(char c) {
-        char[] rot = {'>', 'v', '<', '^'};
+        char[] rot = {CURSOR_RIGHT, CURSOR_DOWN, CURSOR_LEFT, CURSOR_UP};
         for (int i = 0; i < rot.length; i++) {
             if (c == rot[i]) {
                 return rot[(i + 1) % rot.length];
@@ -160,24 +195,24 @@ public class WillItCrash {
     */
     public static void drawCursor(char c, double x, double y) {
         // validate (I know this should be an interface or whatever but I am lazy and nothing is encapsulated yet)
-        if (!(c == 'v' || c == '^' | c == '>' || c == '<')) {
+        if (!isCursor(c)) {
             throw new Error("First arg must be one of the following characters: 'v', '^', '>', or '<'");
         }
         
-        final double triangleScale = 0.3; // Set size of triangle relative to WIDTH
+        final double triangleScale = 0.3 * WIDTH; // Set size of triangle relative to WIDTH
 
         // default vertices coords for upward-facing triangle, assuming c = '^'
         double[] verticesX = {x, x+WIDTH*triangleScale, x-WIDTH*triangleScale};
         double[] verticesY = {y+WIDTH*triangleScale, y-WIDTH*triangleScale, y-WIDTH*triangleScale};
 
         // adjust vertex coords based on true value of 'c'
-        if (c == '>') {
+        if (c == CURSOR_RIGHT) {
             verticesX[0] = x-WIDTH*triangleScale;
             verticesY[1] = y;
-        } else if(c == '<') {
+        } else if(c == CURSOR_LEFT) {
             verticesX[0] = x+WIDTH*triangleScale;
             verticesY[2] = y;
-        } else if(c == 'v') {
+        } else if(c == CURSOR_DOWN) {
             verticesY[0] = y-WIDTH*triangleScale;
             verticesY[1] = y+WIDTH*triangleScale;
             verticesY[2] = y+WIDTH*triangleScale;
