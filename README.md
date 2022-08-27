@@ -9,4 +9,5 @@ Dependencies: StdDraw
 * Source: https://introcs.cs.princeton.edu/java/stdlib/StdDraw.java.html
 
 Functionality
-* 8/25/22 - ROTATE_LEFT, ROTATE_RIGHT, MOVE_FORWARD
+* 8/27/22 - IF, ELSE (not nested) - Will it crash # 1 - 24
+* 8/25/22 - ROTATE_LEFT, ROTATE_RIGHT, MOVE_FORWARD - UTeach Unit 1 # 1 - 4
