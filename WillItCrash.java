@@ -22,6 +22,7 @@ public class WillItCrash {
    public static final char CURSOR_RIGHT = '>';
    public static final char CURSOR_UP = '^';
    public static final char CURSOR_DOWN = 'v';
+   public static final char CURSOR_END = '#';
 
    public static void main(String[] args) throws Exception {
     
@@ -43,52 +44,46 @@ public class WillItCrash {
          }
       }
       
-      //tiny compiler
-      //to do: nested if, iteration
       Scanner commandFile = new Scanner(new File("input-files/commands-"+ inputName + ".txt"));
-      ArrayList<Command> commands = new ArrayList<Command>();
-      commands.add(new Command());
+      ArrayList<String> commandFileParse = new ArrayList<String>();
       while (commandFile.hasNextLine()) {
-         String cmd = commandFile.nextLine().trim();
-            //need getNextBlock method, or re-parse nested if
-         if (cmd.startsWith("IF")) {
-            SelectionCommand scom = new SelectionCommand();
-            scom.addSelectionBlock(cmd);
-            cmd = commandFile.nextLine().trim();
-            while (!cmd.equals("}")) { //won't work with nested if statements
-               if (!cmd.equals("{")) {
-                  scom.addCommand(cmd);
-               }
-               cmd = commandFile.nextLine().trim();
-            }
-            commands.add(scom);
-            commands.add(new Command());
-         }
-         else if (cmd.startsWith("ELSE")) {
-            Command theIf = commands.get(commands.size() - 2);
-            SelectionCommand scom = (SelectionCommand) (theIf);
-            scom.addSelectionBlock(cmd);
-            cmd = commandFile.nextLine().trim();
-            while (!cmd.equals("}")) { //won't work with nested if statements
-               if (!cmd.equals("{")) {
-                  scom.addCommand(cmd);
-               }
-               cmd = commandFile.nextLine().trim();
-            }
+          commandFileParse.add(commandFile.nextLine());
+      }
+      ArrayList<Command> commands = parseCommands(commandFileParse);
+              
+      initializeGrid(grid, endCell);
+
+      makeCommands(commands, grid, endCell);
+        
+   }
+   
+   public static void makeCommands(ArrayList<Command> commands, char[][] grid, int endCell){
+   
+     for (int i = 0; i < commands.size() && !inEndState(grid); i++) {
+         ArrayList<String> myCommands = commands.get(i).getCommandBlock();
          
+         if (commands.get(i).getCommandType().equals("selection")) {
+             myCommands = evaluateSelectionAndGetBlock(grid, commands.get(i));
+         }
+         
+         if (commandBlockHasIf(myCommands)) {
+             ArrayList<Command> subCommands = parseCommands(myCommands);
+             makeCommands(subCommands, grid, endCell);
          }
          else {
-            commands.get(commands.size() - 1).addCommand(cmd);
+         
+             boolean result = true;
+             for (int j = 0; j < myCommands.size() && result; j++) {
+                 result = makeSimpleCommand(grid, endCell, myCommands.get(j));
+             }
          }
       }
-        
-      initializeGrid(grid, endCell);
-      boolean crash = false;
-      boolean succeed = false;
-      for (int i = 0; i < commands.size(); i++) {
-         ArrayList<String> myCommands = commands.get(i).getCommandBlock();
-         if (commands.get(i).getCommandType().equals("selection")) {
-            SelectionCommand selCast = (SelectionCommand) (commands.get(i));
+   }
+   
+   public static ArrayList<String> evaluateSelectionAndGetBlock(char[][] grid, Command cmd) {
+            ArrayList<String> myCommands = new ArrayList<String>();
+            //SelectionCommand selCast = (SelectionCommand) (commands.get(i));
+            SelectionCommand selCast = (SelectionCommand) (cmd);
             ArrayList<String> selComs = selCast.getSelectionBlock();
             boolean selFound = false;
             for (int j = 0; j < selComs.size() && !selFound; j++) {
@@ -124,9 +119,12 @@ public class WillItCrash {
             if (!selFound) {
                myCommands = new ArrayList<String>(); // false if no else
             }
-         }
-         for (int j = 0; j < myCommands.size(); j++) {
-            String myCommand = myCommands.get(j);
+         return myCommands;
+   }
+   
+   public static boolean makeSimpleCommand(char[][] grid, int endCell, String myCommand) {
+            boolean crash = false;
+            boolean succeed = false;
             int curs = getCursorLocation(grid); 
             int cursor_i = curs / 10;
             int cursor_j = curs % 10;
@@ -183,19 +181,110 @@ public class WillItCrash {
                StdDraw.setPenColor(StdDraw.RED);
                StdDraw.text(x, y, "CRASH!");
                StdDraw.show(1000);
-               break;
+               curs = getCursorLocation(grid); 
+               cursor_i = curs / 10;
+               cursor_j = curs % 10;
+               grid[cursor_i][cursor_j] = CURSOR_END;
+               return false;
             }
             if (succeed) {
                StdDraw.setPenColor(StdDraw.BOOK_BLUE );
                StdDraw.text(x, y, "GOAL!!!");
                StdDraw.show(1000);
-               break;
+               curs = getCursorLocation(grid); 
+               cursor_i = curs / 10;
+               cursor_j = curs % 10;
+               grid[cursor_i][cursor_j] = CURSOR_END;
+               return false; 
             }
             StdDraw.show(1000);
+            return true;
+   }
+   
+   public static boolean commandBlockHasIf(ArrayList<String> commandList) {
+       for (int i = 0; i < commandList.size(); i++) {
+           String cmd = commandList.get(i).trim();
+           if (cmd.startsWith("IF")) {
+               return true;
+           }
+       }
+       return false;
+   }
+   
+   public static ArrayList<Command> parseCommands(ArrayList<String> commandList) {
+      //tiny parser
+      //to do: nested if, iteration
+      ArrayList<Command> commands = new ArrayList<Command>();
+      commands.add(new Command());
+      for (int i = 0; i < commandList.size(); i++) {
+         String cmd = commandList.get(i).trim();
+            //need to re-parse nested if
+         if (cmd.startsWith("IF")) {
+            SelectionCommand scom = new SelectionCommand();
+            scom.addSelectionBlock(cmd);
+            i++;
+            cmd = commandList.get(i).trim();
+            int curly = 0;
+            boolean stop = false;
+            while (!stop) { 
+               if (cmd.equals("{")) {
+                   curly++;
+                  if (curly > 1) {
+                      scom.addCommand(cmd);
+                  }
+               }
+               else {
+                   scom.addCommand(cmd);
+               }
+               i++;
+               cmd = commandList.get(i).trim();
+               if (cmd.equals("}")) {
+                   curly--;
+                   if (curly == 0) {
+                       stop = true;
+                   }
+               }
+            }
+            commands.add(scom);
+            commands.add(new Command());
+         }
+         else if (cmd.startsWith("ELSE")) {
+            Command theIf = commands.get(commands.size() - 2);
+            SelectionCommand scom = (SelectionCommand) (theIf);
+            scom.addSelectionBlock(cmd);
+            i++;
+            cmd = commandList.get(i).trim();
+            int curly = 0;
+            boolean stop = false;
+            while (!stop) { 
+               if (cmd.equals("{")) {
+                   curly++;
+                  if (curly > 1) {
+                      scom.addCommand(cmd);
+                  }
+               }
+               else {
+                   scom.addCommand(cmd);
+               }
+               i++;
+               cmd = commandList.get(i).trim();
+               //example 29 is malformed - each curly brace should be on its own line
+               if (cmd.equals("}")) {
+                   curly--;
+                   if (curly == 0) {
+                       stop = true;
+                   }
+               }
+            }
+         
+         }
+         else {
+            commands.get(commands.size() - 1).addCommand(cmd);
          }
       }
-        
+      return commands;
    }
+   
    public static void initializeGrid(char[][] grid, int endCell) {
       StdDraw.setXscale(0, grid.length * WIDTH);
       StdDraw.setYscale(0, (grid.length + 1) * WIDTH);
@@ -262,6 +351,17 @@ public class WillItCrash {
          }
       }
       return -1;
+   }
+   
+   public static boolean inEndState (char[][] grid) {
+      for (int i = 0; i < grid.length; i++) {
+         for (int j = 0; j < grid[i].length; j++) {
+            if (grid[i][j] == CURSOR_END) {
+               return true;
+            }
+         }
+      }
+      return false;
    }
     
      /**
