@@ -9,7 +9,7 @@ Dependencies: StdDraw
 * Source: https://introcs.cs.princeton.edu/java/stdlib/StdDraw.java.html
 
 Functionality
-* 8/31/22 - definite iteration
+* 8/31/22 - definite iteration (not nested), repeat until goal reached (not nested repeats)
 * 8/28/22 - nested IF/ELSE - will it crash # 25 - 42
 * 8/27/22 - IF, ELSE (not nested) - Will it crash # 1 - 24
 * 8/25/22 - ROTATE_LEFT, ROTATE_RIGHT, MOVE_FORWARD - UTeach Unit 1 # 1 - 4
