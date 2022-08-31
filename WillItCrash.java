@@ -65,6 +65,21 @@ public class WillItCrash {
          if (commands.get(i).getCommandType().equals("selection")) {
              myCommands = evaluateSelectionAndGetBlock(grid, commands.get(i));
          }
+         else if (commands.get(i).getCommandType().equals("iteration")) {
+             IterationCommand itcom = (IterationCommand) (commands.get(i));
+             ArrayList<Command> itCommandBlock = new ArrayList<Command>();
+             
+             while (!itcom.hasEnded()) {
+                  Command cbl = new Command();
+                  for (String cblcmd : myCommands) {
+                      cbl.addCommand(cblcmd);
+                  }
+                  itCommandBlock.add(cbl);
+                  
+                  myCommands = itcom.getCommandBlock();
+             }
+             makeCommands(itCommandBlock, grid, endCell);
+         }
          
          if (commandBlockHasIf(myCommands)) {
              ArrayList<Command> subCommands = parseCommands(myCommands);
@@ -213,12 +228,11 @@ public class WillItCrash {
    
    public static ArrayList<Command> parseCommands(ArrayList<String> commandList) {
       //tiny parser
-      //to do: nested if, iteration
+      //to do: iteration
       ArrayList<Command> commands = new ArrayList<Command>();
       commands.add(new Command());
       for (int i = 0; i < commandList.size(); i++) {
          String cmd = commandList.get(i).trim();
-            //need to re-parse nested if
          if (cmd.startsWith("IF")) {
             SelectionCommand scom = new SelectionCommand();
             scom.addSelectionBlock(cmd);
@@ -277,6 +291,38 @@ public class WillItCrash {
                }
             }
          
+         }
+         else if (cmd.startsWith("REPEAT") && cmd.contains("TIMES")) {
+            String numstr = cmd.replaceAll("[^0-9]", "");
+            int lim = Integer.parseInt(numstr);
+            DefiniteIterationCommand itcom = new DefiniteIterationCommand(lim);
+            i++;
+            cmd = commandList.get(i).trim();
+            int curly = 0;
+            boolean stop = false;
+            while (!stop) { 
+               if (cmd.equals("{")) {
+                   curly++;
+                  if (curly > 1) {
+                      itcom.addCommand(cmd);
+                  }
+               }
+               else {
+                   itcom.addCommand(cmd);
+               }
+               i++;
+               cmd = commandList.get(i).trim();
+               if (cmd.equals("}")) {
+                   curly--;
+                   if (curly == 0) {
+                       stop = true;
+                   }
+               }
+            }
+            commands.add(itcom);
+            commands.add(new Command());
+         
+             
          }
          else {
             commands.get(commands.size() - 1).addCommand(cmd);
@@ -358,6 +404,17 @@ public class WillItCrash {
          for (int j = 0; j < grid[i].length; j++) {
             if (grid[i][j] == CURSOR_END) {
                return true;
+            }
+         }
+      }
+      return false;
+   }
+   
+   public static boolean goalReached(char[][] grid, int endCell) {
+     for (int i = 0; i < grid.length; i++) {
+         for (int j = 0; j < grid[i].length; j++) {
+            if (grid[i][j] == CURSOR_END) {
+               return (i * 10 + j == endCell);
             }
          }
       }
