@@ -1,0 +1,8 @@
+MOVE_FORWARD ()
+IF (CAN_MOVE (forward))
+{
+   MOVE_FORWARD ()
+   MOVE_FORWARD ()
+}
+ROTATE_LEFT ()
+MOVE_FORWARD ()

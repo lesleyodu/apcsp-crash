@@ -1,0 +1,13 @@
+IF (CAN_MOVE (forward))
+{
+   MOVE_FORWARD ()
+}
+IF (CAN_MOVE (forward))
+{
+   MOVE_FORWARD ()
+}
+ROTATE_LEFT ()
+IF (CAN_MOVE (forward))
+{
+   MOVE_FORWARD ()
+}
