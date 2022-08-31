@@ -81,6 +81,7 @@ public class WillItCrash {
              makeCommands(itCommandBlock, grid, endCell);
          }
          
+         //to do: call commandBlockHasRepeat for nested loops - what if both if and repeat?
          if (commandBlockHasIf(myCommands)) {
              ArrayList<Command> subCommands = parseCommands(myCommands);
              makeCommands(subCommands, grid, endCell);
@@ -111,19 +112,22 @@ public class WillItCrash {
                else {
                   String selDir = selCom.replaceAll("[^a-z]", "");
                   int selDirNum = 0;
-                  if (selDir.equals("forward")) {
+                  if (selDir.startsWith("forward")) {
                      selDirNum = MOVE_FORWARD;
                   }
-                  else if (selDir.equals("left")) {
+                  else if (selDir.startsWith("left")) {
                      selDirNum = MOVE_LEFT;
                   }
-                  else if (selDir.equals("right")) {
+                  else if (selDir.startsWith("right")) {
                      selDirNum = MOVE_RIGHT;
                   }
                   else {
                      selDirNum = MOVE_BACKWARD;
                   }
                   boolean selEval = canMove(grid, selDirNum);
+                  if (selDir.endsWith("false")) {
+                      selEval = !selEval;
+                  }
                   if (selEval) {
                      selCast.setIndex(j);
                      myCommands = selCast.getCommandBlock();
@@ -144,7 +148,7 @@ public class WillItCrash {
             int cursor_i = curs / 10;
             int cursor_j = curs % 10;
             StdDraw.setPenColor(StdDraw.WHITE);
-            double x = grid.length * WIDTH/2.0;
+            double x = grid[0].length * WIDTH/2.0;
             double y = (grid.length + 0.5)* WIDTH;
             StdDraw.filledRectangle(x, y, (grid.length * WIDTH)/2.0, WIDTH * 0.5);
             StdDraw.setPenColor(StdDraw.BLACK);
@@ -191,7 +195,7 @@ public class WillItCrash {
             }
             drawGrid(grid, endCell);
             StdDraw.setPenColor(StdDraw.WHITE);
-            StdDraw.filledRectangle(x, y, (grid.length * WIDTH)/2.0, WIDTH * 0.5);
+            StdDraw.filledRectangle(x, y, (grid[0].length * WIDTH)/2.0, WIDTH * 0.5);
             if (crash) {
                StdDraw.setPenColor(StdDraw.RED);
                StdDraw.text(x, y, "CRASH!");
@@ -220,6 +224,16 @@ public class WillItCrash {
        for (int i = 0; i < commandList.size(); i++) {
            String cmd = commandList.get(i).trim();
            if (cmd.startsWith("IF")) {
+               return true;
+           }
+       }
+       return false;
+   }
+   
+   public static boolean commandBlockHasRepeat(ArrayList<String> commandList) {
+       for (int i = 0; i < commandList.size(); i++) {
+           String cmd = commandList.get(i).trim();
+           if (cmd.startsWith("REPEAT")) {
                return true;
            }
        }
@@ -292,9 +306,14 @@ public class WillItCrash {
             }
          
          }
-         else if (cmd.startsWith("REPEAT") && cmd.contains("TIMES")) {
-            String numstr = cmd.replaceAll("[^0-9]", "");
-            int lim = Integer.parseInt(numstr);
+         //a repeat until goal reached loop can be represented as a 100x definite loop
+         else if (cmd.startsWith("REPEAT") && (cmd.contains("TIMES") ||
+                                               cmd.contains("GoalReached"))) {
+            int lim = 100;
+            if (cmd.contains("TIMES")) {
+                String numstr = cmd.replaceAll("[^0-9]", "");
+                lim = Integer.parseInt(numstr);
+            }
             DefiniteIterationCommand itcom = new DefiniteIterationCommand(lim);
             i++;
             cmd = commandList.get(i).trim();
@@ -332,7 +351,7 @@ public class WillItCrash {
    }
    
    public static void initializeGrid(char[][] grid, int endCell) {
-      StdDraw.setXscale(0, grid.length * WIDTH);
+      StdDraw.setXscale(0, grid[0].length * WIDTH);
       StdDraw.setYscale(0, (grid.length + 1) * WIDTH);
       Font font = new Font("Arial", Font.BOLD, 60);
       StdDraw.setFont(font);
